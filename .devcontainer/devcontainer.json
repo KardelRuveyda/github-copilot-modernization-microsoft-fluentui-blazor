@@ -1,0 +1,30 @@
+{
+  "name": "FluentDemo (.NET 10)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [5062, 5159],
+  "portsAttributes": {
+    "5062": {
+      "label": "FluentDemo.Api",
+      "onAutoForward": "silent"
+    },
+    "5159": {
+      "label": "FluentDemo.Web",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "dotnet restore FluentDemo.slnx",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "ms-azuretools.vscode-bicep"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}

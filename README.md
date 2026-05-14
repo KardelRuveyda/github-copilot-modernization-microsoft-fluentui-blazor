@@ -1,5 +1,7 @@
 # FluentUI Blazor Demo
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/KardelRuveyda/github-copilot-modernization-microsoft-fluentui-blazor?quickstart=1)
+
 A showcase application built with **.NET 10**, **Blazor Server** and **Microsoft FluentUI Blazor**.
 The goal of this repository is to demonstrate how the FluentUI Blazor component library can be
 used to build a rich, Azure Portal-style web application — including data grids, charts,
