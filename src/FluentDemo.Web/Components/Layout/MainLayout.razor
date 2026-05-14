@@ -7,7 +7,7 @@
 
 <FluentDesignTheme @bind-Mode="_themeMode"
                    CustomColor="@Theme.PrimaryColor"
-                   StorageName="fluentdemo-theme" />
+                   StorageName="insentif-theme" />
 
 @if (!Auth.IsAuthenticated)
 {
@@ -69,17 +69,17 @@ else
                                HorizontalPosition="HorizontalPosition.Start"
                                Style="width:380px;">
                     <Header>
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
+                        <FluentStack HorizontalAlignment="HorizontalAlignment.SpaceBetween" VerticalAlignment="VerticalAlignment.Center">
                             <strong>@L.T("shell.notifications")</strong>
                             <FluentButton Appearance="Appearance.Stealth">@L.T("shell.markRead")</FluentButton>
-                        </div>
+                        </FluentStack>
                     </Header>
                     <Body>
-                        <div style="display:flex; flex-direction:column;">
+                        <FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
                             <NotifItem Icon="@(new Icons.Filled.Size20.CheckmarkCircle())" CustomColor="#107c10" Title="Incentive #1234 approved" Subtitle="2 minutes ago" />
                             <NotifItem Icon="@(new Icons.Filled.Size20.Clock())" CustomColor="#f7630c" Title="3 incentives pending review" Subtitle="1 hour ago" />
                             <NotifItem Icon="@(new Icons.Filled.Size20.DataBarVertical())" CustomColor="#0078d4" Title="Monthly report is ready" Subtitle="yesterday" />
-                        </div>
+                        </FluentStack>
                     </Body>
                     <Footer>
                         <FluentButton Appearance="Appearance.Stealth">@L.T("shell.viewAll")</FluentButton>
