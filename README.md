@@ -1,6 +1,10 @@
 # FluentUI Blazor Demo
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Azure%20App%20Service-0078D4?logo=microsoftazure&logoColor=white)](https://app-fluentdemo-web-ygi6c27opusmo.azurewebsites.net/)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/KardelRuveyda/github-copilot-modernization-microsoft-fluentui-blazor?quickstart=1)
+
+🌐 **Live demo:** <https://app-fluentdemo-web-ygi6c27opusmo.azurewebsites.net/>
+Sign in with username `admin` and any non-empty password.
 
 A showcase application built with **.NET 10**, **Blazor Server** and **Microsoft FluentUI Blazor**.
 The goal of this repository is to demonstrate how the FluentUI Blazor component library can be
