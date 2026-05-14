@@ -35,3 +35,10 @@ PublishProfiles/
 ## Local secrets
 appsettings.*.local.json
 secrets.json
+
+## Azure Developer CLI (azd) — keep deployment-plan.md and infra/, ignore per-env state
+.azure/*/.env
+.azure/*/config.json
+!.azure/deployment-plan.md
+*.publishsettings
+*.azurePubxml
