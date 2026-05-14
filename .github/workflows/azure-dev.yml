@@ -40,6 +40,11 @@ jobs:
       - name: Provision Infrastructure
         run: azd provision --no-prompt
 
+      - name: Package services (sequential to avoid Shared.dll lock)
+        run: |
+          azd package api --no-prompt
+          azd package web --no-prompt
+
       - name: Deploy Application
         run: azd deploy --no-prompt
         
