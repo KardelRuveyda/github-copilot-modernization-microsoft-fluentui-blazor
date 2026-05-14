@@ -75,11 +75,11 @@ else
                         </FluentStack>
                     </Header>
                     <Body>
-                        <FluentStack Orientation="Orientation.Vertical" VerticalGap="0">
+                        <div class="notif-list">
                             <NotifItem Icon="@(new Icons.Filled.Size20.CheckmarkCircle())" CustomColor="#107c10" Title="Incentive #1234 approved" Subtitle="2 minutes ago" />
                             <NotifItem Icon="@(new Icons.Filled.Size20.Clock())" CustomColor="#f7630c" Title="3 incentives pending review" Subtitle="1 hour ago" />
                             <NotifItem Icon="@(new Icons.Filled.Size20.DataBarVertical())" CustomColor="#0078d4" Title="Monthly report is ready" Subtitle="yesterday" />
-                        </FluentStack>
+                        </div>
                     </Body>
                     <Footer>
                         <FluentButton Appearance="Appearance.Stealth">@L.T("shell.viewAll")</FluentButton>
