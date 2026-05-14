@@ -1,0 +1,13 @@
+@inject AuthState Auth
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", forceLoad: false);
+        }
+    }
+}

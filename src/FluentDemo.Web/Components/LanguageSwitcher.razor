@@ -1,0 +1,29 @@
+@inject LocalizationService L
+@implements IDisposable
+
+<FluentButton Id="btnLang"
+              Appearance="Appearance.Stealth"
+              OnClick="@(() => _open = !_open)"
+              IconStart="@(new Icons.Regular.Size20.LocalLanguage())"
+              Title="Language">
+    <span class="hide-mobile">@(L.Current == Language.En ? "EN" : "TR")</span>
+</FluentButton>
+<FluentPopover AnchorId="btnLang" @bind-Open="_open" VerticalThreshold="170" Style="width:160px;">
+    <Body>
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="2">
+            <FluentButton Appearance="@(L.Current == Language.En ? Appearance.Accent : Appearance.Stealth)"
+                          OnClick="@(() => Pick(Language.En))"
+                          Style="justify-content:flex-start;width:100%;">English</FluentButton>
+            <FluentButton Appearance="@(L.Current == Language.Tr ? Appearance.Accent : Appearance.Stealth)"
+                          OnClick="@(() => Pick(Language.Tr))"
+                          Style="justify-content:flex-start;width:100%;">Türkçe</FluentButton>
+        </FluentStack>
+    </Body>
+</FluentPopover>
+
+@code {
+    bool _open;
+    void Pick(Language lang) { L.SetLanguage(lang); _open = false; }
+    protected override void OnInitialized() => L.Changed += StateHasChanged;
+    public void Dispose() => L.Changed -= StateHasChanged;
+}

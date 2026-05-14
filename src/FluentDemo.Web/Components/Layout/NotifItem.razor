@@ -1,0 +1,16 @@
+@using Microsoft.FluentUI.AspNetCore.Components
+
+<div style="display:flex; align-items:flex-start; gap:12px; padding:10px 14px;">
+    <FluentIcon Value="@Icon" Color="Color.Custom" CustomColor="@CustomColor" />
+    <div style="display:flex; flex-direction:column; gap:2px; min-width:0; flex:1;">
+        <span style="font-size:13px; font-weight:500; color:var(--neutral-foreground-rest);">@Title</span>
+        <small style="color:var(--neutral-foreground-hint); font-size:12px;">@Subtitle</small>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Icon Icon { get; set; } = default!;
+    [Parameter] public string CustomColor { get; set; } = "#0078d4";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+}

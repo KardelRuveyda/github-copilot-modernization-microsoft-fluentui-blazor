@@ -1,0 +1,268 @@
+@inherits LayoutComponentBase
+@inject AuthState Auth
+@inject LocalizationService L
+@inject ThemeService Theme
+@inject NavigationManager Nav
+@implements IDisposable
+
+<FluentDesignTheme @bind-Mode="_themeMode"
+                   CustomColor="@Theme.PrimaryColor"
+                   StorageName="fluentdemo-theme" />
+
+@if (!Auth.IsAuthenticated)
+{
+    @Body
+}
+else
+{
+    <div class="app-shell">
+        <header class="portal-header">
+            <div class="topbar-left">
+                <button class="topbar-iconbtn" @onclick="@(() => _navExpanded = !_navExpanded)" title="Menu" aria-label="Menu">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.LineHorizontal3())" />
+                </button>
+                <a href="/" class="portal-brand">
+                    <div class="portal-brand-mark">
+                        <FluentIcon Value="@(new Icons.Filled.Size20.Sparkle())" Color="Color.Custom" CustomColor="#0078d4" />
+                    </div>
+                    <span class="portal-brand-name">FluentDemo</span>
+                </a>
+            </div>
+
+            <div class="topbar-search">
+                <FluentSearch Placeholder="@L.T("shell.search")"
+                              @bind-Value="_searchQuery"
+                              @onkeydown="OnSearchKey"
+                              @onfocus="@(() => _searchOpen = true)"
+                              Immediate="true" />
+                @if (_searchOpen && SearchResults.Any())
+                {
+                    <div class="search-dropdown">
+                        <div class="search-dropdown-header">@L.T("menu.dashboard") � Pages</div>
+                        @foreach (var r in SearchResults)
+                        {
+                            <button class="search-result" @onclick="@(() => Go(r.Url))" @onmousedown:preventDefault="true">
+                                <FluentIcon Value="@r.Icon" Color="Color.Accent" />
+                                <div class="search-result-text">
+                                    <div class="search-result-title">@r.Title</div>
+                                    <div class="search-result-sub">@r.Url</div>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="topbar-right">
+                <div class="topbar-notif-wrap">
+                    <button id="btnNotif"
+                            class="topbar-iconbtn"
+                            @onclick="@(() => _notifOpen = !_notifOpen)"
+                            title="@L.T("shell.notifications")"
+                            aria-label="Notifications">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Alert())" />
+                    </button>
+                    <span class="topbar-notif-badge">3</span>
+                </div>
+                <FluentPopover AnchorId="btnNotif" @bind-Open="_notifOpen"
+                               VerticalThreshold="200"
+                               HorizontalPosition="HorizontalPosition.Start"
+                               Style="width:380px;">
+                    <Header>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
+                            <strong>@L.T("shell.notifications")</strong>
+                            <FluentButton Appearance="Appearance.Stealth">@L.T("shell.markRead")</FluentButton>
+                        </div>
+                    </Header>
+                    <Body>
+                        <div style="display:flex; flex-direction:column;">
+                            <NotifItem Icon="@(new Icons.Filled.Size20.CheckmarkCircle())" CustomColor="#107c10" Title="Incentive #1234 approved" Subtitle="2 minutes ago" />
+                            <NotifItem Icon="@(new Icons.Filled.Size20.Clock())" CustomColor="#f7630c" Title="3 incentives pending review" Subtitle="1 hour ago" />
+                            <NotifItem Icon="@(new Icons.Filled.Size20.DataBarVertical())" CustomColor="#0078d4" Title="Monthly report is ready" Subtitle="yesterday" />
+                        </div>
+                    </Body>
+                    <Footer>
+                        <FluentButton Appearance="Appearance.Stealth">@L.T("shell.viewAll")</FluentButton>
+                    </Footer>
+                </FluentPopover>
+
+                <button id="btnAccount"
+                        class="topbar-iconbtn topbar-account-btn"
+                        @onclick="@(() => _accountOpen = !_accountOpen)"
+                        title="@Auth.Username"
+                        aria-label="Account">
+                    <div class="topbar-avatar">@(Auth.Username?.Substring(0,1).ToUpper())</div>
+                </button>
+                <FluentPopover AnchorId="btnAccount" @bind-Open="_accountOpen"
+                               VerticalThreshold="200"
+                               HorizontalPosition="HorizontalPosition.Start"
+                               Style="width:300px;">
+                    <Header>
+                        <div class="account-pop-header">
+                            <div class="account-pop-avatar">@(Auth.Username?.Substring(0,1).ToUpper())</div>
+                            <div class="account-pop-info">
+                                <strong>@Auth.Username</strong>
+                                <small>@Auth.Username@@fluentdemo.local</small>
+                            </div>
+                        </div>
+                    </Header>
+                    <Body>
+                        <div class="account-pop-menu">
+                            <FluentAnchor Href="/settings" Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size20.Person())">@L.T("set.tab.profile")</FluentAnchor>
+                            <FluentAnchor Href="/settings" Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size20.Settings())">@L.T("shell.settings")</FluentAnchor>
+                            <FluentAnchor Href="/settings" Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size20.LockClosed())">@L.T("set.tab.security")</FluentAnchor>
+                        </div>
+                    </Body>
+                    <Footer>
+                        <FluentButton Appearance="Appearance.Accent"
+                                      IconStart="@(new Icons.Regular.Size20.SignOut())"
+                                      OnClick="SignOut"
+                                      Style="width:100%;">
+                            @L.T("shell.signOut")
+                        </FluentButton>
+                    </Footer>
+                </FluentPopover>
+            </div>
+        </header>
+
+        <div class="app-body" @onclick="@(() => _searchOpen = false)">
+            @if (_navExpanded)
+            {
+                <NavMenu />
+            }
+            else
+            {
+                <div class="rail-collapsed">
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.Home())" Title="@L.T("menu.home")" OnClick='@(() => Nav.NavigateTo("/"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.Board())" Title="@L.T("menu.dashboard")" OnClick='@(() => Nav.NavigateTo("/dashboard"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.Money())" Title="@L.T("menu.incentives")" OnClick='@(() => Nav.NavigateTo("/incentives"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.Add())" Title="@L.T("menu.createIncentive")" OnClick='@(() => Nav.NavigateTo("/create-incentive"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.DataBarVertical())" Title="@L.T("menu.reports")" OnClick='@(() => Nav.NavigateTo("/reports"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.People())" Title="@L.T("menu.users")" OnClick='@(() => Nav.NavigateTo("/users"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.Folder())" Title="@L.T("menu.resources")" OnClick='@(() => Nav.NavigateTo("/resources"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.History())" Title="@L.T("menu.activity")" OnClick='@(() => Nav.NavigateTo("/activity"))' />
+                    <FluentButton Appearance="Appearance.Stealth" IconStart="@(new Icons.Regular.Size20.Settings())" Title="@L.T("menu.settings")" OnClick='@(() => Nav.NavigateTo("/settings"))' />
+                </div>
+            }
+
+            <div class="portal-body-content">
+                <Breadcrumbs />
+                <div class="portal-content">
+                    @Body
+                </div>
+                <footer class="portal-footer">
+                    <span>� 2026 FluentDemo Modernization Demo � .NET 10 � Blazor � FluentUI Blazor</span>
+                    <div class="portal-footer-links">
+                        <a href="#">Privacy</a>
+                        <a href="#">Terms</a>
+                        <a href="#">Help</a>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <ChatBot />
+}
+
+<FluentToastProvider />
+<FluentDialogProvider />
+<FluentTooltipProvider />
+<FluentMessageBarProvider />
+<FluentMenuProvider />
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unexpected error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">??</span>
+</div>
+
+@code {
+    private bool _navExpanded = false;
+    private bool _notifOpen;
+    private bool _accountOpen;
+    private bool _searchOpen;
+    private string _searchQuery = "";
+    private DesignThemeModes _themeMode = DesignThemeModes.System;
+
+    private record PageEntry(string Title, string Url, string Keywords, Icon Icon);
+
+    private List<PageEntry> AllPages => new()
+    {
+        new(L.T("menu.home"),            "/",                 "home dashboard",                                new Icons.Regular.Size20.Home()),
+        new(L.T("menu.dashboard"),       "/dashboard",        "dashboard overview",                            new Icons.Regular.Size20.Board()),
+        new(L.T("menu.incentives"),      "/incentives",       "incentive list te?vik bonus",                   new Icons.Regular.Size20.Money()),
+        new(L.T("menu.createIncentive"), "/create-incentive", "create new incentive wizard yeni ekle",         new Icons.Regular.Size20.Add()),
+        new(L.T("menu.reports"),         "/reports",          "reports analytics chart rapor",                 new Icons.Regular.Size20.DataBarVertical()),
+        new(L.T("menu.users"),           "/users",            "users people accounts kullan?c?",               new Icons.Regular.Size20.People()),
+        new(L.T("menu.resources"),       "/resources",        "resources tree kaynak",                         new Icons.Regular.Size20.Folder()),
+        new(L.T("menu.activity"),        "/activity",         "activity log audit",                            new Icons.Regular.Size20.History()),
+        new(L.T("menu.settings"),        "/settings",         "settings preferences ayar profile theme",       new Icons.Regular.Size20.Settings()),
+    };
+
+    private List<PageEntry> SearchResults
+    {
+        get
+        {
+            var q = (_searchQuery ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(q)) return AllPages.Take(6).ToList();
+            return AllPages
+                .Where(p => p.Title.ToLowerInvariant().Contains(q) || p.Keywords.Contains(q))
+                .Take(8)
+                .ToList();
+        }
+    }
+
+    private void Go(string url)
+    {
+        _searchOpen = false;
+        _searchQuery = "";
+        Nav.NavigateTo(url);
+    }
+
+    private string _themeModeString
+    {
+        get => _themeMode.ToString();
+        set
+        {
+            if (Enum.TryParse<DesignThemeModes>(value, out var m))
+            {
+                _themeMode = m;
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Auth.Changed += StateHasChanged;
+        L.Changed += StateHasChanged;
+        Theme.Changed += StateHasChanged;
+        Nav.LocationChanged += (_, __) => InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Auth.Changed -= StateHasChanged;
+        L.Changed -= StateHasChanged;
+        Theme.Changed -= StateHasChanged;
+    }
+
+    private void SignOut()
+    {
+        Auth.SignOut();
+        Nav.NavigateTo("/login");
+    }
+
+    private void OnSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") { _searchOpen = false; return; }
+        if (e.Key != "Enter") { _searchOpen = true; return; }
+        var first = SearchResults.FirstOrDefault();
+        if (first is null) return;
+        Go(first.Url);
+    }
+}

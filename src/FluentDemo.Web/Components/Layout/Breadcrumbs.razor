@@ -1,0 +1,61 @@
+@inject NavigationManager Nav
+@inject LocalizationService L
+@implements IDisposable
+
+<div class="portal-breadcrumbs">
+    <FluentBreadcrumb>
+        <FluentBreadcrumbItem Href="/">
+            <FluentIcon Value="@(new Icons.Regular.Size16.Home())" Slot="start" />
+            @L.T("bc.home")
+        </FluentBreadcrumbItem>
+        @foreach (var crumb in _crumbs)
+        {
+            <FluentBreadcrumbItem Href="@(crumb.IsLast ? null : crumb.Href)">
+                @crumb.Label
+            </FluentBreadcrumbItem>
+        }
+    </FluentBreadcrumb>
+</div>
+
+@code {
+    private record Crumb(string Label, string Href, bool IsLast);
+
+    private List<Crumb> _crumbs = new();
+
+    protected override void OnInitialized()
+    {
+        L.Changed += StateHasChanged;
+        Nav.LocationChanged += (_, __) => { Build(); InvokeAsync(StateHasChanged); };
+        Build();
+    }
+
+    public void Dispose() => L.Changed -= StateHasChanged;
+
+    private void Build()
+    {
+        _crumbs.Clear();
+        var path = new Uri(Nav.Uri).AbsolutePath.Trim('/');
+        if (string.IsNullOrEmpty(path)) return;
+
+        var parts = path.Split('/');
+        var href = "";
+        for (int i = 0; i < parts.Length; i++)
+        {
+            href += "/" + parts[i];
+            _crumbs.Add(new Crumb(LabelFor(parts[i]), href, i == parts.Length - 1));
+        }
+    }
+
+    private string LabelFor(string seg) => seg switch
+    {
+        "dashboard"        => L.T("menu.dashboard"),
+        "incentives"       => L.T("menu.incentives"),
+        "create-incentive" => L.T("menu.createIncentive"),
+        "users"            => L.T("menu.users"),
+        "reports"          => L.T("menu.reports"),
+        "resources"        => L.T("menu.resources"),
+        "activity"         => L.T("menu.activity"),
+        "settings"         => L.T("menu.settings"),
+        _                  => seg
+    };
+}

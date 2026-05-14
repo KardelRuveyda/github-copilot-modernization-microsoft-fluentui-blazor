@@ -1,0 +1,44 @@
+@inject LocalizationService L
+@implements IDisposable
+
+<FluentNavMenu Width="220" Collapsible="false" Title="FluentUI Demo">
+    <FluentNavLink Href="/" Match="NavLinkMatch.All" Icon="@(new Icons.Regular.Size20.Home())" IconColor="Color.Accent">
+        @L.T("menu.home")
+    </FluentNavLink>
+    <FluentNavLink Href="/dashboard" Icon="@(new Icons.Regular.Size20.Board())" IconColor="Color.Accent">
+        @L.T("menu.dashboard")
+    </FluentNavLink>
+
+    <FluentNavGroup Title="@L.T("nav.group.work")" Icon="@(new Icons.Regular.Size20.Briefcase())" Expanded="true">
+        <FluentNavLink Href="/incentives" Icon="@(new Icons.Regular.Size20.Money())" IconColor="Color.Accent">
+            @L.T("menu.incentives")
+        </FluentNavLink>
+        <FluentNavLink Href="/create-incentive" Icon="@(new Icons.Regular.Size20.Add())" IconColor="Color.Success">
+            @L.T("menu.createIncentive")
+        </FluentNavLink>
+        <FluentNavLink Href="/reports" Icon="@(new Icons.Regular.Size20.DataBarVertical())" IconColor="Color.Accent">
+            @L.T("menu.reports")
+        </FluentNavLink>
+    </FluentNavGroup>
+
+    <FluentNavGroup Title="@L.T("nav.group.manage")" Icon="@(new Icons.Regular.Size20.Settings())" Expanded="true">
+        <FluentNavLink Href="/users" Icon="@(new Icons.Regular.Size20.People())" IconColor="Color.Accent">
+            @L.T("menu.users")
+        </FluentNavLink>
+        <FluentNavLink Href="/resources" Icon="@(new Icons.Regular.Size20.Folder())" IconColor="Color.Accent">
+            @L.T("menu.resources")
+        </FluentNavLink>
+        <FluentNavLink Href="/activity" Icon="@(new Icons.Regular.Size20.History())" IconColor="Color.Accent">
+            @L.T("menu.activity")
+        </FluentNavLink>
+        <FluentNavLink Href="/settings" Icon="@(new Icons.Regular.Size20.Settings())" IconColor="Color.Accent">
+            @L.T("menu.settings")
+        </FluentNavLink>
+    </FluentNavGroup>
+</FluentNavMenu>
+
+@code {
+    protected override void OnInitialized() => L.Changed += StateHasChanged;
+    public void Dispose() => L.Changed -= StateHasChanged;
+}
+

@@ -1,0 +1,163 @@
+@page "/create-incentive"
+@inject LocalizationService L
+@inject NavigationManager Nav
+@inject IToastService Toast
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>@L.T("wiz.title") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<div class="az-page-header">
+    <h1 class="az-page-title">
+        <span class="az-page-title-icon"><FluentIcon Value="@(new Icons.Filled.Size20.Add())" Color="Color.Fill" /></span>
+        @L.T("wiz.title")
+    </h1>
+    <p class="az-page-subtitle">@L.T("wiz.subtitle")</p>
+</div>
+
+<div class="az-wizard">
+    <div class="az-stepper">
+        @for (int i = 0; i < _steps.Length; i++)
+        {
+            var idx = i;
+            var cls = idx == _step ? "active" : (idx < _step ? "done" : "");
+            <div class="az-step @cls">
+                <span class="az-step-num">@(idx < _step ? "✓" : (idx + 1).ToString())</span>
+                <span>@_steps[idx]</span>
+            </div>
+            if (i < _steps.Length - 1) { <span class="az-step-sep">›</span> }
+        }
+    </div>
+
+    <div class="az-wizard-body">
+        @if (_step == 0)
+        {
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.type")</label>
+                <FluentSelect @bind-Value="_model.Type" TOption="string">
+                    <FluentOption Value="Performance bonus">Performance bonus</FluentOption>
+                    <FluentOption Value="Sales commission">Sales commission</FluentOption>
+                    <FluentOption Value="Referral reward">Referral reward</FluentOption>
+                    <FluentOption Value="Project completion">Project completion</FluentOption>
+                </FluentSelect>
+            </div>
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.desc")</label>
+                <FluentTextArea @bind-Value="_model.Description" Rows="4" />
+                <span class="az-form-hint">Optional. Describe the reason for this incentive.</span>
+            </div>
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.priority")</label>
+                <FluentRadioGroup @bind-Value="_model.Priority" TValue="string" Orientation="Orientation.Horizontal">
+                    <FluentRadio Value="@("Low")">Low</FluentRadio>
+                    <FluentRadio Value="@("Normal")">Normal</FluentRadio>
+                    <FluentRadio Value="@("High")">High</FluentRadio>
+                </FluentRadioGroup>
+            </div>
+        }
+        else if (_step == 1)
+        {
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.dept")</label>
+                <FluentSelect @bind-Value="_model.Department" TOption="string">
+                    <FluentOption Value="Engineering">Engineering</FluentOption>
+                    <FluentOption Value="Sales">Sales</FluentOption>
+                    <FluentOption Value="HR">HR</FluentOption>
+                    <FluentOption Value="Finance">Finance</FluentOption>
+                </FluentSelect>
+            </div>
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.employee")</label>
+                <FluentSearch @bind-Value="_model.Employee" Placeholder="Search by name or employee no..." />
+            </div>
+            <div class="az-form-row">
+                <FluentSwitch @bind-Value="_model.Notify">
+                    @L.T("wiz.f.notify")
+                </FluentSwitch>
+            </div>
+        }
+        else if (_step == 2)
+        {
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.amount")</label>
+                <FluentNumberField @bind-Value="_model.Amount" Min="0" Step="100" />
+            </div>
+            <div class="az-form-row">
+                <label class="az-form-label">@L.T("wiz.f.date")</label>
+                <FluentDatePicker @bind-Value="_model.Date" />
+            </div>
+        }
+        else
+        {
+            <h3 style="margin-top:0;">@L.T("wiz.s4")</h3>
+            <div class="info-grid" style="max-width:none;">
+                <div class="info-row"><span>@L.T("wiz.f.type")</span><b>@_model.Type</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.priority")</span><b>@_model.Priority</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.dept")</span><b>@_model.Department</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.employee")</span><b>@_model.Employee</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.amount")</span><b>₺ @_model.Amount.ToString("N2")</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.date")</span><b>@_model.Date?.ToString("yyyy-MM-dd")</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.notify")</span><b>@(_model.Notify ? "Yes" : "No")</b></div>
+                <div class="info-row"><span>@L.T("wiz.f.desc")</span><b>@_model.Description</b></div>
+            </div>
+        }
+    </div>
+
+    <div class="az-wizard-footer">
+        <FluentButton Appearance="Appearance.Stealth" OnClick="Prev" Disabled="@(_step == 0)">
+            ‹ @L.T("wiz.prev")
+        </FluentButton>
+        @if (_step < _steps.Length - 1)
+        {
+            <FluentButton Appearance="Appearance.Accent" OnClick="Next">@L.T("wiz.next") ›</FluentButton>
+        }
+        else
+        {
+            <FluentButton Appearance="Appearance.Accent" OnClick="Create">✓ @L.T("wiz.create")</FluentButton>
+        }
+    </div>
+</div>
+
+@code {
+    private string[] _steps = Array.Empty<string>();
+    private int _step = 0;
+
+    private class Model
+    {
+        public string Type { get; set; } = "Performance bonus";
+        public string Description { get; set; } = "";
+        public string Priority { get; set; } = "Normal";
+        public string Department { get; set; } = "Engineering";
+        public string Employee { get; set; } = "";
+        public decimal Amount { get; set; } = 1000;
+        public DateTime? Date { get; set; } = DateTime.Today;
+        public bool Notify { get; set; } = true;
+    }
+
+    private Model _model = new();
+
+    protected override void OnInitialized()
+    {
+        L.Changed += BuildSteps;
+        BuildSteps();
+    }
+
+    private void BuildSteps()
+    {
+        _steps = new[] { L.T("wiz.s1"), L.T("wiz.s2"), L.T("wiz.s3"), L.T("wiz.s4") };
+        StateHasChanged();
+    }
+
+    private void Next() { if (_step < _steps.Length - 1) _step++; }
+    private void Prev() { if (_step > 0) _step--; }
+
+    private void Create()
+    {
+        Toast.ShowSuccess(L.T("wiz.created"));
+        Nav.NavigateTo("/incentives");
+    }
+
+    public void Dispose() => L.Changed -= BuildSteps;
+}

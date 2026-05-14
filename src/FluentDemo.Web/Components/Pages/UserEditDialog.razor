@@ -1,0 +1,37 @@
+@implements IDialogContentComponent<AppUser>
+@inject LocalizationService L
+
+<FluentDialogHeader ShowDismiss="true">
+    <strong>@Dialog.Instance.Parameters.Title</strong>
+</FluentDialogHeader>
+
+<FluentDialogBody>
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+        <FluentTextField @bind-Value="Content.Username"    Label="@L.T("usr.col.username")"    Required="true" Style="width:100%;" />
+        <FluentTextField @bind-Value="Content.FullName"    Label="@L.T("usr.col.fullName")"    Required="true" Style="width:100%;" />
+        <FluentTextField @bind-Value="Content.Email"       Label="@L.T("usr.col.email")"       TextFieldType="TextFieldType.Email" Style="width:100%;" />
+        <FluentTextField @bind-Value="Content.Department"  Label="@L.T("usr.col.department")"  Style="width:100%;" />
+
+        <FluentSelect TOption="string"
+                      Label="@L.T("usr.col.role")"
+                      @bind-SelectedOption="Content.Role"
+                      Items="@(new[] { "Admin", "Manager", "User" })"
+                      OptionText="@(r => L.T($"role.{r}"))"
+                      Style="width:100%;" />
+
+        <FluentSwitch @bind-Value="Content.IsActive" Label="@L.T("usr.active")" />
+    </FluentStack>
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Neutral" OnClick="Cancel">@L.T("usr.cancel")</FluentButton>
+    <FluentButton Appearance="Appearance.Accent"  OnClick="Save">@L.T("usr.save")</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [Parameter] public AppUser Content { get; set; } = new();
+    [CascadingParameter] public FluentDialog Dialog { get; set; } = default!;
+
+    private async Task Save()   => await Dialog.CloseAsync(Content);
+    private async Task Cancel() => await Dialog.CancelAsync();
+}

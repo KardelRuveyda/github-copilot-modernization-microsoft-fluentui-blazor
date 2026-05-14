@@ -1,0 +1,9 @@
+@inject LocalizationService L
+
+<div style="margin-top:24px;">
+    <FluentButton Appearance="Appearance.Accent" OnClick="OnClick">@L.T("set.save")</FluentButton>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClick { get; set; }
+}

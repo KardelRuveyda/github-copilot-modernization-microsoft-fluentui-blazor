@@ -1,0 +1,255 @@
+@page "/users"
+@inject AuthState Auth
+@inject LocalizationService L
+@inject IHttpClientFactory HttpFactory
+@inject IDialogService DialogService
+@inject IToastService ToastService
+@inject ExcelExportService Excel
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>@L.T("usr.title") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<div class="az-page-header">
+    <h1 class="az-page-title">
+        <span class="az-page-title-icon"><FluentIcon Value="@(new Icons.Filled.Size20.People())" Color="Color.Fill" /></span>
+        @L.T("usr.title")
+    </h1>
+    <p class="az-page-subtitle">@L.T("usr.subtitle")</p>
+
+    <FluentToolbar Style="margin-top:8px; background:transparent; padding:0;">
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size16.PersonAdd())"
+                      OnClick="OpenCreate">
+            @L.T("usr.new")
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.ArrowClockwise())"
+                      OnClick="LoadAsync">
+            @L.T("common.refresh")
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.ArrowDownload())"
+                      OnClick="ExportAsync">
+            @L.T("common.export")
+        </FluentButton>
+        <FluentDivider Role="DividerRole.Presentation" Orientation="Orientation.Vertical" />
+        <FluentSearch @bind-Value="_search" @bind-Value:after="Filter"
+                      Placeholder="@L.T("common.searchPlaceholder")" Immediate="true" Style="width:320px;" />
+        <FluentSelect TOption="string"
+                      @bind-Value="_roleFilter"
+                      @bind-Value:after="Filter"
+                      Style="min-width:160px;">
+            <FluentOption Value="All">@L.T("common.all")</FluentOption>
+            <FluentOption Value="Admin">@L.T("role.Admin")</FluentOption>
+            <FluentOption Value="Manager">@L.T("role.Manager")</FluentOption>
+            <FluentOption Value="User">@L.T("role.User")</FluentOption>
+        </FluentSelect>
+    </FluentToolbar>
+</div>
+
+<FluentCard Style="padding:0;">
+    <FluentStack HorizontalGap="14" Style="padding:12px 16px; border-bottom:1px solid var(--neutral-stroke-rest);">
+        <FluentBadge Appearance="Appearance.Accent">@_filtered.Count @L.T("usr.total")</FluentBadge>
+        <FluentBadge Appearance="Appearance.Neutral" Style="background:#dff6dd; color:#107c10;">
+            @_filtered.Count(x => x.IsActive) @L.T("usr.active")
+        </FluentBadge>
+        <FluentBadge Appearance="Appearance.Neutral" Style="background:#fde7e9; color:#a4262c;">
+            @_filtered.Count(x => !x.IsActive) @L.T("usr.inactive")
+        </FluentBadge>
+    </FluentStack>
+
+    @if (_loading)
+    {
+        <FluentStack HorizontalAlignment="HorizontalAlignment.Center" Style="padding:60px;">
+            <FluentProgressRing />
+        </FluentStack>
+    }
+    else
+    {
+        <FluentDataGrid Items="@_filtered.AsQueryable()"
+                        Pagination="@_pagination"
+                        GridTemplateColumns="60px 1fr 1.4fr 1.6fr 1fr 110px 110px 110px 120px"
+                        ShowHover="true"
+                        ResizableColumns="true">
+            <PropertyColumn Property="@(u => u.Id)" Title="ID" Sortable="true" />
+            <PropertyColumn Property="@(u => u.Username)" Title="@L.T("usr.col.username")" Sortable="true" />
+            <TemplateColumn Title="@L.T("usr.col.fullName")" SortBy="@_sortName">
+                <FluentPersona Name="@context.FullName"
+                               Initials="@(context.FullName.Substring(0,1).ToUpper())"
+                               Status="@(context.IsActive ? PresenceStatus.Available : PresenceStatus.Offline)"
+                               StatusSize="PresenceBadgeSize.Small"
+                               ImageSize="32px" />
+            </TemplateColumn>
+            <PropertyColumn Property="@(u => u.Email)" Title="@L.T("usr.col.email")" />
+            <PropertyColumn Property="@(u => u.Department)" Title="@L.T("usr.col.department")" Sortable="true" />
+            <TemplateColumn Title="@L.T("usr.col.role")">
+                <FluentBadge Appearance="Appearance.Neutral"
+                             BackgroundColor="@RoleBg(context.Role)"
+                             Color="@RoleFg(context.Role)">
+                    @L.T($"role.{context.Role}")
+                </FluentBadge>
+            </TemplateColumn>
+            <TemplateColumn Title="@L.T("usr.col.status")">
+                @if (context.IsActive)
+                {
+                    <FluentBadge Appearance="Appearance.Neutral" BackgroundColor="#dff6dd" Color="#107c10">
+                        @L.T("usr.active")
+                    </FluentBadge>
+                }
+                else
+                {
+                    <FluentBadge Appearance="Appearance.Neutral" BackgroundColor="#fde7e9" Color="#a4262c">
+                        @L.T("usr.inactive")
+                    </FluentBadge>
+                }
+            </TemplateColumn>
+            <PropertyColumn Property="@(u => u.CreatedDate)" Title="@L.T("usr.col.created")" Format="dd.MM.yyyy" Sortable="true" />
+            <TemplateColumn Title="@L.T("usr.col.actions")" Align="Align.Center">
+                <FluentButton Appearance="Appearance.Stealth"
+                              IconStart="@(new Icons.Regular.Size16.Edit())"
+                              OnClick="@(() => OpenEdit(context))"
+                              Title="Edit" />
+                <FluentButton Appearance="Appearance.Stealth"
+                              IconStart="@(new Icons.Regular.Size16.Delete())"
+                              OnClick="@(() => DeleteAsync(context))"
+                              Title="Delete" />
+            </TemplateColumn>
+        </FluentDataGrid>
+        <FluentPaginator State="@_pagination" />
+    }
+</FluentCard>
+
+@code {
+    private List<AppUser> _all = new();
+    private List<AppUser> _filtered = new();
+    private string _search = "";
+    private string _roleFilter = "All";
+    private bool _loading = true;
+    private PaginationState _pagination = new() { ItemsPerPage = 10 };
+    private GridSort<AppUser> _sortName = GridSort<AppUser>.ByAscending(x => x.FullName);
+
+    protected override async Task OnInitializedAsync()
+    {
+        L.Changed += StateHasChanged;
+        await LoadAsync();
+    }
+
+    public void Dispose() => L.Changed -= StateHasChanged;
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            _all = await client.GetFromJsonAsync<List<AppUser>>("/api/users") ?? new();
+            Filter();
+        }
+        finally { _loading = false; }
+    }
+
+    private void Filter()
+    {
+        IEnumerable<AppUser> q = _all;
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var s = _search.Trim();
+            q = q.Where(u =>
+                u.FullName.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                u.Username.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                u.Department.Contains(s, StringComparison.OrdinalIgnoreCase));
+        }
+        if (_roleFilter is not null and not "All")
+            q = q.Where(u => u.Role == _roleFilter);
+        _filtered = q.ToList();
+    }
+
+    private async Task ExportAsync()
+    {
+        await Excel.ExportAsync(
+            $"users_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+            "Users",
+            _filtered,
+            ("ID",         u => u.Id),
+            ("Username",   u => u.Username),
+            ("Full Name",  u => u.FullName),
+            ("Email",      u => u.Email),
+            ("Department", u => u.Department),
+            ("Role",       u => u.Role),
+            ("Active",     u => u.IsActive),
+            ("Created",    u => u.CreatedDate)
+        );
+        ToastService.ShowSuccess($"Exported {_filtered.Count} users to Excel");
+    }
+
+    private async Task OpenCreate()
+    {
+        var dialog = await DialogService.ShowDialogAsync<UserEditDialog>(new AppUser { Role = "User", IsActive = true },
+            new DialogParameters { Title = L.T("usr.new"), PrimaryAction = L.T("usr.save"), SecondaryAction = L.T("usr.cancel"), Width = "520px" });
+        var result = await dialog.Result;
+        if (!result.Cancelled && result.Data is AppUser u)
+        {
+            var client = HttpFactory.CreateClient("Api");
+            var resp = await client.PostAsJsonAsync("/api/users", u);
+            if (resp.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess($"✓ {u.FullName}");
+                await LoadAsync();
+            }
+        }
+    }
+
+    private async Task OpenEdit(AppUser src)
+    {
+        var copy = new AppUser
+        {
+            Id = src.Id, Username = src.Username, FullName = src.FullName,
+            Email = src.Email, Department = src.Department, Role = src.Role,
+            IsActive = src.IsActive, CreatedDate = src.CreatedDate
+        };
+        var dialog = await DialogService.ShowDialogAsync<UserEditDialog>(copy,
+            new DialogParameters { Title = L.T("usr.edit"), PrimaryAction = L.T("usr.save"), SecondaryAction = L.T("usr.cancel"), Width = "520px" });
+        var result = await dialog.Result;
+        if (!result.Cancelled && result.Data is AppUser u)
+        {
+            var client = HttpFactory.CreateClient("Api");
+            var resp = await client.PutAsJsonAsync($"/api/users/{u.Id}", u);
+            if (resp.IsSuccessStatusCode)
+            {
+                ToastService.ShowSuccess($"✓ {u.FullName}");
+                await LoadAsync();
+            }
+        }
+    }
+
+    private async Task DeleteAsync(AppUser u)
+    {
+        var dialog = await DialogService.ShowConfirmationAsync(
+            L.T("usr.deleteConfirm"), L.T("usr.delete"), L.T("usr.cancel"), $"{L.T("usr.delete")}: {u.FullName}");
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            var client = HttpFactory.CreateClient("Api");
+            await client.DeleteAsync($"/api/users/{u.Id}");
+            ToastService.ShowSuccess($"🗑 {u.FullName}");
+            await LoadAsync();
+        }
+    }
+
+    private static string RoleBg(string role) => role switch
+    {
+        "Admin"   => "#fde7e9",
+        "Manager" => "#fff4ce",
+        _         => "#dff6dd"
+    };
+    private static string RoleFg(string role) => role switch
+    {
+        "Admin"   => "#a4262c",
+        "Manager" => "#a06b00",
+        _         => "#107c10"
+    };
+}

@@ -1,0 +1,280 @@
+@page "/incentives"
+@inject AuthState Auth
+@inject LocalizationService L
+@inject IHttpClientFactory HttpFactory
+@inject ExcelExportService Excel
+@inject IToastService Toast
+@inject NavigationManager Nav
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>@L.T("inc.title") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<div class="az-page-header">
+    <h1 class="az-page-title">
+        <span class="az-page-title-icon"><FluentIcon Value="@(new Icons.Filled.Size20.Money())" Color="Color.Fill" /></span>
+        @L.T("inc.title")
+    </h1>
+    <p class="az-page-subtitle">@L.T("inc.subtitle")</p>
+
+    <FluentToolbar Style="margin-top:8px; background:transparent; padding:0;">
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size16.Add())"
+                      OnClick='@(() => Nav.NavigateTo("/create-incentive"))'>
+            @L.T("shell.create")
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.ArrowClockwise())"
+                      OnClick="LoadAsync">
+            @L.T("common.refresh")
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Filled.Size16.DocumentTable())"
+                      OnClick="ExportAsync">
+            @L.T("common.export")
+        </FluentButton>
+        <FluentDivider Role="DividerRole.Presentation" Orientation="Orientation.Vertical" />
+        <FluentSearch @bind-Value="_search" @bind-Value:after="Filter"
+                      Placeholder="@L.T("common.searchPlaceholder")" Immediate="true" Style="width: 320px;" />
+        <FluentSelect TOption="string"
+                      @bind-Value="_statusFilter"
+                      @bind-Value:after="Filter"
+                      Style="min-width:160px;">
+            <FluentOption Value="All">@L.T("common.all")</FluentOption>
+            <FluentOption Value="Approved">@L.T("status.Approved")</FluentOption>
+            <FluentOption Value="Pending">@L.T("status.Pending")</FluentOption>
+            <FluentOption Value="Rejected">@L.T("status.Rejected")</FluentOption>
+        </FluentSelect>
+    </FluentToolbar>
+</div>
+
+<FluentCard AreaRestricted="false" Style="padding:0;">
+    <FluentStack HorizontalAlignment="HorizontalAlignment.SpaceBetween" Style="padding:12px 16px; border-bottom:1px solid var(--neutral-stroke-rest);">
+        <FluentStack HorizontalGap="10">
+            <button type="button" class="filter-chip @(_statusFilter == "All" ? "active" : "")" @onclick='@(() => SetStatus("All"))'>
+                @_all.Count @L.T("common.records")
+            </button>
+            <button type="button" class="filter-chip chip-accent" @onclick='@(() => SetStatus("All"))'>
+                @L.T("common.total"): ₺ @_filtered.Sum(x => x.Amount).ToString("N2")
+            </button>
+            <button type="button" class="filter-chip chip-approved @(_statusFilter == "Approved" ? "active" : "")" @onclick='@(() => SetStatus("Approved"))'>
+                @_all.Count(x => x.Status == "Approved") @L.T("status.Approved")
+            </button>
+            <button type="button" class="filter-chip chip-pending @(_statusFilter == "Pending" ? "active" : "")" @onclick='@(() => SetStatus("Pending"))'>
+                @_all.Count(x => x.Status == "Pending") @L.T("status.Pending")
+            </button>
+            <button type="button" class="filter-chip chip-rejected @(_statusFilter == "Rejected" ? "active" : "")" @onclick='@(() => SetStatus("Rejected"))'>
+                @_all.Count(x => x.Status == "Rejected") @L.T("status.Rejected")
+            </button>
+        </FluentStack>
+    </FluentStack>
+
+    @if (_loading)
+    {
+        <FluentStack HorizontalAlignment="HorizontalAlignment.Center" Style="padding:60px;">
+            <FluentProgressRing />
+        </FluentStack>
+    }
+    else if (_error is not null)
+    {
+        <FluentMessageBar Intent="MessageIntent.Error" Title="Error">@_error</FluentMessageBar>
+    }
+    else if (_filtered.Count == 0)
+    {
+        <FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" Style="padding:60px;">
+            <FluentIcon Value="@(new Icons.Regular.Size48.Search())" Color="Color.Neutral" />
+            <p style="color:var(--neutral-foreground-hint);">No incentives match your filter.</p>
+        </FluentStack>
+    }
+    else
+    {
+        <FluentDataGrid Items="@_filtered.AsQueryable()"
+                        Pagination="@_pagination"
+                        GridTemplateColumns="64px 110px 1.6fr 1fr 1.3fr 120px 110px 120px 56px"
+                        ShowHover="true"
+                        ResizableColumns="true">
+            <PropertyColumn Property="@(t => t.Id)" Title="@L.T("inc.col.id")" Sortable="true" />
+            <PropertyColumn Property="@(t => t.EmployeeNo)" Title="@L.T("inc.col.employeeNo")" />
+            <TemplateColumn Title="@L.T("inc.col.fullName")" Sortable="true" SortBy="@_sortFullName">
+                <FluentPersona Name="@context.FullName"
+                               Initials="@Initials(context.FullName)"
+                               ImageSize="28px" />
+            </TemplateColumn>
+            <PropertyColumn Property="@(t => t.Department)" Title="@L.T("inc.col.department")" Sortable="true" />
+            <PropertyColumn Property="@(t => t.IncentiveType)" Title="@L.T("inc.col.type")" />
+            <PropertyColumn Property="@(t => t.Amount)" Title="@($"{L.T("inc.col.amount")} (₺)")" Format="N2" Sortable="true" Align="Align.End" />
+            <PropertyColumn Property="@(t => t.Date)" Title="@L.T("inc.col.date")" Format="dd.MM.yyyy" Sortable="true" />
+            <TemplateColumn Title="@L.T("inc.col.status")">
+                <FluentBadge Appearance="Appearance.Neutral"
+                             BackgroundColor="@StatusBg(context.Status)"
+                             Color="@StatusFg(context.Status)">
+                    @L.T($"status.{context.Status}")
+                </FluentBadge>
+            </TemplateColumn>
+            <TemplateColumn Title="" Align="Align.End">
+                <FluentButton Appearance="Appearance.Stealth"
+                              IconEnd="@(new Icons.Regular.Size16.MoreHorizontal())"
+                              Id="@($"row-{context.Id}")"
+                              OnClick="@(() => ToggleMenu(context.Id))" />
+                <FluentMenu Anchor="@($"row-{context.Id}")"
+                            @bind-Open="@_menuOpen[context.Id]"
+                            VerticalThreshold="170">
+                    <FluentMenuItem OnClick="@(() => EditRow(context))">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.Edit())" Slot="start" />
+                        @L.T("common.edit")
+                    </FluentMenuItem>
+                    <FluentMenuItem OnClick="@(() => ViewRow(context))">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.Eye())" Slot="start" />
+                        @L.T("common.view")
+                    </FluentMenuItem>
+                    <FluentMenuItem OnClick="@(() => DeleteRow(context))">
+                        <FluentIcon Value="@(new Icons.Regular.Size16.Delete())" Slot="start" Color="Color.Error" />
+                        @L.T("common.delete")
+                    </FluentMenuItem>
+                </FluentMenu>
+            </TemplateColumn>
+        </FluentDataGrid>
+        <FluentPaginator State="@_pagination" />
+    }
+</FluentCard>
+
+@code {
+    private List<Incentive> _all = new();
+    private List<Incentive> _filtered = new();
+    private string _search = "";
+    private string _statusFilter = "All";
+    private bool _loading = true;
+    private string? _error;
+    private PaginationState _pagination = new() { ItemsPerPage = 10 };
+    private Dictionary<int, bool> _menuOpen = new();
+
+    private GridSort<Incentive> _sortFullName = GridSort<Incentive>.ByAscending(x => x.FullName);
+
+    protected override async Task OnInitializedAsync()
+    {
+        L.Changed += StateHasChanged;
+        if (!Auth.IsAuthenticated) return;
+        await LoadAsync();
+    }
+
+    public void Dispose() => L.Changed -= StateHasChanged;
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var client = HttpFactory.CreateClient("Api");
+            _all = await client.GetFromJsonAsync<List<Incentive>>("/api/incentives") ?? new();
+            Filter();
+            Toast.ShowSuccess(L.T("common.refresh") + " ✓");
+        }
+        catch (Exception ex)
+        {
+            _error = L.T("inc.loadError") + ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Filter()
+    {
+        IEnumerable<Incentive> q = _all;
+        if (!string.IsNullOrWhiteSpace(_search))
+        {
+            var s = _search.Trim();
+            q = q.Where(t =>
+                t.FullName.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                t.EmployeeNo.Contains(s, StringComparison.OrdinalIgnoreCase) ||
+                t.Department.Contains(s, StringComparison.OrdinalIgnoreCase));
+        }
+        if (_statusFilter is not null and not "All")
+            q = q.Where(t => t.Status == _statusFilter);
+
+        _filtered = q.ToList();
+
+        foreach (var item in _filtered)
+        {
+            if (!_menuOpen.ContainsKey(item.Id))
+                _menuOpen[item.Id] = false;
+        }
+    }
+
+    private void SetStatus(string status)
+    {
+        _statusFilter = status;
+        Filter();
+    }
+
+    private void ToggleMenu(int id)
+    {
+        if (!_menuOpen.ContainsKey(id)) _menuOpen[id] = false;
+        _menuOpen[id] = !_menuOpen[id];
+    }
+
+    private void EditRow(Incentive row)
+    {
+        _menuOpen[row.Id] = false;
+        Toast.ShowInfo($"Edit #{row.Id} — {row.FullName}");
+    }
+
+    private void ViewRow(Incentive row)
+    {
+        _menuOpen[row.Id] = false;
+        Toast.ShowInfo($"View #{row.Id} — {row.FullName}");
+    }
+
+    private void DeleteRow(Incentive row)
+    {
+        _menuOpen[row.Id] = false;
+        _all.RemoveAll(x => x.Id == row.Id);
+        Filter();
+        Toast.ShowSuccess($"Deleted #{row.Id}");
+    }
+
+    private async Task ExportAsync()
+    {
+        await Excel.ExportAsync(
+            $"incentives_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+            "Incentives",
+            _filtered,
+            ("ID",            x => x.Id),
+            ("Employee No",   x => x.EmployeeNo),
+            ("Full Name",     x => x.FullName),
+            ("Department",    x => x.Department),
+            ("Incentive Type",x => x.IncentiveType),
+            ("Amount (TRY)",  x => x.Amount),
+            ("Date",          x => x.Date),
+            ("Status",        x => x.Status)
+        );
+        Toast.ShowSuccess($"Exported {_filtered.Count} rows to Excel");
+    }
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+            : name.Substring(0, Math.Min(2, name.Length)).ToUpper();
+    }
+
+    private static string StatusBg(string s) => s switch
+    {
+        "Approved" => "#dff6dd",
+        "Pending"  => "#fff4ce",
+        "Rejected" => "#fde7e9",
+        _ => "#f3f2f1"
+    };
+    private static string StatusFg(string s) => s switch
+    {
+        "Approved" => "#107c10",
+        "Pending"  => "#a06b00",
+        "Rejected" => "#a4262c",
+        _ => "#605e5c"
+    };
+}

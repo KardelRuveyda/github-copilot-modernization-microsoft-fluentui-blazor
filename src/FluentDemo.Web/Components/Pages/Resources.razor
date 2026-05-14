@@ -1,0 +1,111 @@
+@page "/resources"
+@inject LocalizationService L
+@inject HttpClient HttpFactoryClient
+@inject IHttpClientFactory HttpFactory
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>@L.T("menu.resources") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<div class="az-page-header">
+    <h1 class="az-page-title">
+        <span class="az-page-title-icon"><FluentIcon Value="@(new Icons.Filled.Size20.Folder())" Color="Color.Fill" /></span>
+        @L.T("res.title")
+    </h1>
+    <p class="az-page-subtitle">@L.T("res.subtitle")</p>
+    <div class="az-cmd-bar">
+        <button class="az-cmd-btn primary">＋ @L.T("common.new")</button>
+        <button class="az-cmd-btn">🔄 @L.T("common.refresh")</button>
+        <button class="az-cmd-btn">⬇ @L.T("common.export")</button>
+        <button class="az-cmd-btn">⚙ @L.T("common.columns")</button>
+    </div>
+</div>
+
+<div class="az-split">
+    <div class="az-tree">
+        <FluentTreeView>
+            <FluentTreeItem Text="@L.T("res.tree.root")" InitiallyExpanded="true">
+                <FluentTreeItem Text="@L.T("res.tree.incentives")" InitiallyExpanded="true" @onclick='@(() => Select("Incentives", "💰", 8))'>
+                    <FluentTreeItem Text="Approved (5)"  @onclick='@(() => Select("Approved incentives", "✓", 5))' />
+                    <FluentTreeItem Text="Pending (2)"   @onclick='@(() => Select("Pending incentives", "⏳", 2))' />
+                    <FluentTreeItem Text="Rejected (1)"  @onclick='@(() => Select("Rejected incentives", "✕", 1))' />
+                </FluentTreeItem>
+                <FluentTreeItem Text="@L.T("res.tree.depts")" @onclick='@(() => Select("Departments", "🏢", 4))'>
+                    <FluentTreeItem Text="Engineering" @onclick='@(() => Select("Engineering", "💻", 12))' />
+                    <FluentTreeItem Text="Sales"       @onclick='@(() => Select("Sales", "📈", 8))' />
+                    <FluentTreeItem Text="HR"          @onclick='@(() => Select("HR", "👥", 3))' />
+                    <FluentTreeItem Text="Finance"     @onclick='@(() => Select("Finance", "💵", 5))' />
+                </FluentTreeItem>
+                <FluentTreeItem Text="@L.T("res.tree.users")"  @onclick='@(() => Select("Users", "👤", 28))' />
+                <FluentTreeItem Text="@L.T("res.tree.groups")" @onclick='@(() => Select("Groups", "👥", 6))' />
+            </FluentTreeItem>
+        </FluentTreeView>
+    </div>
+
+    <div class="az-tile">
+        @if (_selected is null)
+        {
+            <div style="text-align:center; padding:60px 16px; color:#605e5c;">
+                <div style="font-size:48px; margin-bottom:8px;">📁</div>
+                <div>@L.T("res.empty")</div>
+            </div>
+        }
+        else
+        {
+            <div class="az-tile-header">
+                <h3 class="az-tile-title">@_selected.Icon @_selected.Name</h3>
+                <span class="az-pill info">@_selected.Count items</span>
+            </div>
+
+            <div class="az-grid-3" style="margin-bottom:16px;">
+                <div class="az-kpi">
+                    <div class="az-kpi-icon" style="background:#0078d4;">#</div>
+                    <div>
+                        <div class="az-kpi-value">@_selected.Count</div>
+                        <div class="az-kpi-label">Total items</div>
+                    </div>
+                </div>
+                <div class="az-kpi">
+                    <div class="az-kpi-icon" style="background:#107c10;">✓</div>
+                    <div>
+                        <div class="az-kpi-value">@(_selected.Count * 80 / 100)</div>
+                        <div class="az-kpi-label">Active</div>
+                    </div>
+                </div>
+                <div class="az-kpi">
+                    <div class="az-kpi-icon" style="background:#f7630c;">!</div>
+                    <div>
+                        <div class="az-kpi-value">@(_selected.Count * 20 / 100)</div>
+                        <div class="az-kpi-label">Needs attention</div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 style="margin:8px 0 8px;">@L.T("res.details")</h4>
+            <div class="info-grid" style="max-width:none;">
+                <div class="info-row"><span>Name</span><b>@_selected.Name</b></div>
+                <div class="info-row"><span>Type</span><b>@_selected.Icon Resource</b></div>
+                <div class="info-row"><span>Created</span><b>@DateTime.Today.AddDays(-30):yyyy-MM-dd</b></div>
+                <div class="info-row"><span>Last modified</span><b>@DateTime.Today:yyyy-MM-dd</b></div>
+                <div class="info-row"><span>Owner</span><b>admin@@fluentdemo.local</b></div>
+                <div class="info-row"><span>Status</span><span class="az-pill success">Operational</span></div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private record Selected(string Name, string Icon, int Count);
+    private Selected? _selected;
+
+    private void Select(string name, string icon, int count)
+    {
+        _selected = new Selected(name, icon, count);
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized() => L.Changed += StateHasChanged;
+    public void Dispose() => L.Changed -= StateHasChanged;
+}

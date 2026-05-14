@@ -1,0 +1,143 @@
+@page "/activity"
+@inject LocalizationService L
+@inject ExcelExportService Excel
+@inject IToastService Toast
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>@L.T("menu.activity") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<div class="az-page-header">
+    <h1 class="az-page-title">
+        <span class="az-page-title-icon"><FluentIcon Value="@(new Icons.Filled.Size20.History())" Color="Color.Fill" /></span>
+        @L.T("act.title")
+    </h1>
+    <p class="az-page-subtitle">@L.T("act.subtitle")</p>
+
+    <FluentToolbar Style="margin-top:8px; background:transparent; padding:0;">
+        <FluentButton Appearance="Appearance.Stealth"
+                      IconStart="@(new Icons.Regular.Size16.ArrowClockwise())"
+                      OnClick="@(() => StateHasChanged())">
+            @L.T("common.refresh")
+        </FluentButton>
+        <FluentButton Appearance="Appearance.Accent"
+                      IconStart="@(new Icons.Regular.Size16.ArrowDownload())"
+                      OnClick="ExportAsync">
+            @L.T("act.export")
+        </FluentButton>
+        <FluentDivider Role="DividerRole.Presentation" Orientation="Orientation.Vertical" />
+        <FluentSelect TOption="string" @bind-Value="_levelFilter" Style="min-width:140px;">
+            <FluentOption Value="">@L.T("common.all")</FluentOption>
+            <FluentOption Value="Info">Info</FluentOption>
+            <FluentOption Value="Warning">Warning</FluentOption>
+            <FluentOption Value="Error">Error</FluentOption>
+            <FluentOption Value="Success">Success</FluentOption>
+        </FluentSelect>
+        <FluentSearch @bind-Value="_query" Placeholder="@L.T("act.filter")" Immediate="true" Style="width:280px;" />
+    </FluentToolbar>
+</div>
+
+<FluentCard Style="padding:0;">
+    <FluentDataGrid Items="Filtered"
+                    Pagination="@_pagination"
+                    GridTemplateColumns="160px 110px 1fr 160px 220px"
+                    ShowHover="true"
+                    ResizableColumns="true">
+        <PropertyColumn Property="@(a => a.TimeStamp)" Format="yyyy-MM-dd HH:mm" Title="Timestamp" Sortable="true" />
+        <TemplateColumn Title="Level">
+            <FluentBadge Appearance="Appearance.Neutral"
+                         BackgroundColor="@LevelBg(context.Level)"
+                         Color="@LevelFg(context.Level)">
+                @context.Level
+            </FluentBadge>
+        </TemplateColumn>
+        <TemplateColumn Title="Operation">
+            <FluentStack VerticalAlignment="VerticalAlignment.Center" HorizontalGap="8">
+                <FluentIcon Value="@LevelIcon(context.Level)" Color="Color.Custom" CustomColor="@LevelFg(context.Level)" />
+                <span>@context.Message</span>
+            </FluentStack>
+        </TemplateColumn>
+        <TemplateColumn Title="User">
+            <FluentPersona Name="@context.User" Initials="@(context.User.Substring(0,1).ToUpper())" ImageSize="24px" />
+        </TemplateColumn>
+        <PropertyColumn Property="@(a => a.Resource)" Title="Resource" />
+    </FluentDataGrid>
+    <FluentPaginator State="@_pagination" />
+</FluentCard>
+
+@code {
+    private record LogEntry(DateTime TimeStamp, string Level, string Message, string User, string Resource);
+
+    private string _query = "";
+    private string _levelFilter = "";
+    private PaginationState _pagination = new() { ItemsPerPage = 10 };
+
+    private readonly LogEntry[] _all = new[]
+    {
+        new LogEntry(DateTime.Now.AddMinutes(-2),   "Success", "Approved incentive #1042",            "admin",     "Incentives/1042"),
+        new LogEntry(DateTime.Now.AddMinutes(-15),  "Info",    "User signed in",                       "admin",     "Auth"),
+        new LogEntry(DateTime.Now.AddHours(-1),     "Success", "Created incentive #1043",              "manager01", "Incentives/1043"),
+        new LogEntry(DateTime.Now.AddHours(-3),     "Warning", "Rate limit hit on API",                "system",    "Api/incentives"),
+        new LogEntry(DateTime.Now.AddHours(-5),     "Success", "Updated user profile",                 "jane.doe",  "Users/12"),
+        new LogEntry(DateTime.Now.AddHours(-8),     "Error",   "Failed login attempt",                 "unknown",   "Auth"),
+        new LogEntry(DateTime.Now.AddDays(-1),      "Info",    "Generated monthly report",             "admin",     "Reports/monthly"),
+        new LogEntry(DateTime.Now.AddDays(-1).AddHours(-2), "Success", "Created user jane.doe",        "admin",     "Users/new"),
+        new LogEntry(DateTime.Now.AddDays(-2),      "Warning", "Pending approvals exceeded threshold", "system",    "Incentives"),
+        new LogEntry(DateTime.Now.AddDays(-2),      "Success", "Deleted user temp01",                  "admin",     "Users/9"),
+        new LogEntry(DateTime.Now.AddDays(-3),      "Info",    "Exported activity log to CSV",         "manager01", "Activity"),
+        new LogEntry(DateTime.Now.AddDays(-4),      "Error",   "Database connection retried",          "system",    "Db"),
+        new LogEntry(DateTime.Now.AddDays(-5),      "Success", "Approved incentive #1031",             "admin",     "Incentives/1031"),
+        new LogEntry(DateTime.Now.AddDays(-6),      "Info",    "System backup completed",              "system",    "Backup"),
+    };
+
+    private IQueryable<LogEntry> Filtered => _all
+        .Where(a => string.IsNullOrEmpty(_levelFilter) || a.Level == _levelFilter)
+        .Where(a => string.IsNullOrEmpty(_query)
+                    || a.Message.Contains(_query, StringComparison.OrdinalIgnoreCase)
+                    || a.User.Contains(_query, StringComparison.OrdinalIgnoreCase)
+                    || a.Resource.Contains(_query, StringComparison.OrdinalIgnoreCase))
+        .OrderByDescending(a => a.TimeStamp)
+        .AsQueryable();
+
+    private async Task ExportAsync()
+    {
+        await Excel.ExportAsync(
+            $"activity_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+            "Activity",
+            Filtered,
+            ("Timestamp", a => a.TimeStamp),
+            ("Level",     a => a.Level),
+            ("Operation", a => a.Message),
+            ("User",      a => a.User),
+            ("Resource",  a => a.Resource)
+        );
+        Toast.ShowSuccess($"Exported {Filtered.Count()} entries to Excel");
+    }
+
+    private static string LevelBg(string l) => l switch
+    {
+        "Success" => "#dff6dd",
+        "Warning" => "#fff4ce",
+        "Error"   => "#fde7e9",
+        _         => "#deecf9"
+    };
+    private static string LevelFg(string l) => l switch
+    {
+        "Success" => "#107c10",
+        "Warning" => "#a06b00",
+        "Error"   => "#a4262c",
+        _         => "#0078d4"
+    };
+    private static Icon LevelIcon(string l) => l switch
+    {
+        "Success" => new Icons.Filled.Size20.CheckmarkCircle(),
+        "Warning" => new Icons.Filled.Size20.Warning(),
+        "Error"   => new Icons.Filled.Size20.ErrorCircle(),
+        _         => new Icons.Filled.Size20.Info()
+    };
+
+    protected override void OnInitialized() => L.Changed += StateHasChanged;
+    public void Dispose() => L.Changed -= StateHasChanged;
+}

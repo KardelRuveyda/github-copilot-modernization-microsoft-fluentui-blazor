@@ -1,0 +1,173 @@
+@page "/settings"
+@inject AuthState Auth
+@inject LocalizationService L
+@inject IToastService ToastService
+@implements IDisposable
+
+<PageTitle>@L.T("set.title") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<h1 class="page-title">@L.T("set.title")</h1>
+<p class="page-subtitle">@L.T("set.subtitle")</p>
+
+<div class="card-surface" style="padding:0;">
+    <FluentTabs @bind-ActiveTabId="_activeTab" Style="padding:8px 16px 0 16px;">
+
+        <FluentTab Id="profile" Label="@L.T("set.tab.profile")">
+            <div class="tab-content">
+                <h3 class="card-title">@L.T("set.profile.title")</h3>
+                <div class="form-grid">
+                    <FluentTextField @bind-Value="_fullName" Label="@L.T("set.profile.fullName")" Style="width:100%;" />
+                    <FluentTextField @bind-Value="_email"    Label="@L.T("set.profile.email")"    TextFieldType="TextFieldType.Email" Style="width:100%;" />
+                    <FluentTextField @bind-Value="_phone"    Label="@L.T("set.profile.phone")"    TextFieldType="TextFieldType.Tel"   Style="width:100%;" />
+                    <FluentTextField @bind-Value="_dept"     Label="@L.T("set.profile.dept")"     Style="width:100%;" />
+                </div>
+                <SaveButton OnClick="Save" />
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="appearance" Label="@L.T("set.tab.appearance")">
+            <div class="tab-content">
+                <h3 class="card-title">@L.T("set.appearance.title")</h3>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.theme")</label>
+                    <FluentRadioGroup TValue="string" @bind-Value="_theme">
+                        <FluentRadio TValue="string" Value="@("light")">@L.T("set.theme.light")</FluentRadio>
+                        <FluentRadio TValue="string" Value="@("dark")">@L.T("set.theme.dark")</FluentRadio>
+                        <FluentRadio TValue="string" Value="@("system")">@L.T("set.theme.system")</FluentRadio>
+                    </FluentRadioGroup>
+                </div>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.density")</label>
+                    <FluentRadioGroup TValue="string" @bind-Value="_density">
+                        <FluentRadio TValue="string" Value="@("compact")">@L.T("set.density.compact")</FluentRadio>
+                        <FluentRadio TValue="string" Value="@("normal")">@L.T("set.density.normal")</FluentRadio>
+                        <FluentRadio TValue="string" Value="@("comfortable")">@L.T("set.density.comfortable")</FluentRadio>
+                    </FluentRadioGroup>
+                </div>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.fontSize") (@_fontSize px)</label>
+                    <FluentSlider @bind-Value="_fontSize" Min="12" Max="18" Step="1" Style="width:280px;" />
+                </div>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.accent")</label>
+                    <div class="color-swatches">
+                        @foreach (var c in new[] { "#4f46e5", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899" })
+                        {
+                            <button type="button"
+                                    class="swatch @(c == _accent ? "selected" : "")"
+                                    style="background:@c;"
+                                    @onclick="@(() => _accent = c)"></button>
+                        }
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.lang")</label>
+                    <LanguageSwitcher />
+                </div>
+
+                <SaveButton OnClick="Save" />
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="notifications" Label="@L.T("set.tab.notifications")">
+            <div class="tab-content">
+                <h3 class="card-title">@L.T("set.notif.title")</h3>
+                <div class="toggle-list">
+                    <FluentSwitch @bind-Value="_notifEmail"    Label="@L.T("set.notif.email")" />
+                    <FluentSwitch @bind-Value="_notifPush"     Label="@L.T("set.notif.push")" />
+                    <FluentSwitch @bind-Value="_notifWeekly"   Label="@L.T("set.notif.weekly")" />
+                    <FluentDivider />
+                    <FluentSwitch @bind-Value="_notifApproved" Label="@L.T("set.notif.approved")" />
+                    <FluentSwitch @bind-Value="_notifPending"  Label="@L.T("set.notif.pending")" />
+                </div>
+                <SaveButton OnClick="Save" />
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="security" Label="@L.T("set.tab.security")">
+            <div class="tab-content">
+                <h3 class="card-title">@L.T("set.sec.title")</h3>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.sec.2fa")</label>
+                    <FluentSwitch @bind-Value="_twoFa" />
+                </div>
+
+                <div class="settings-row">
+                    <label class="settings-label">@L.T("set.sec.session") (@_sessionTimeout min)</label>
+                    <FluentSlider @bind-Value="_sessionTimeout" Min="5" Max="120" Step="5" Style="width:280px;" />
+                </div>
+
+                <FluentButton Appearance="Appearance.Accent">🔑 @L.T("set.sec.changePw")</FluentButton>
+
+                <h3 class="card-title" style="margin-top:24px;">@L.T("set.sec.sessions")</h3>
+                <div class="session-list">
+                    <div class="session-row">
+                        <span>🖥 Windows · Chrome</span>
+                        <span style="color:var(--ins-text-muted);">Istanbul · now</span>
+                        <span class="badge-pill badge-success">current</span>
+                    </div>
+                    <div class="session-row">
+                        <span>📱 iOS · Safari</span>
+                        <span style="color:var(--ins-text-muted);">Istanbul · 2 hours ago</span>
+                        <FluentButton Appearance="Appearance.Stealth">Revoke</FluentButton>
+                    </div>
+                    <div class="session-row">
+                        <span>🖥 macOS · Firefox</span>
+                        <span style="color:var(--ins-text-muted);">Ankara · yesterday</span>
+                        <FluentButton Appearance="Appearance.Stealth">Revoke</FluentButton>
+                    </div>
+                </div>
+            </div>
+        </FluentTab>
+
+        <FluentTab Id="system" Label="@L.T("set.tab.system")">
+            <div class="tab-content">
+                <h3 class="card-title">@L.T("set.sys.title")</h3>
+                <div class="info-grid">
+                    <div class="info-row"><span>@L.T("set.sys.version")</span><b>2.0.0 (.NET 10)</b></div>
+                    <div class="info-row"><span>@L.T("set.sys.environment")</span><b>Development</b></div>
+                    <div class="info-row"><span>@L.T("set.sys.api")</span><b>http://localhost:5062</b></div>
+                    <div class="info-row"><span>@L.T("set.sys.support")</span><b>support@fluentdemo.local</b></div>
+                </div>
+                <FluentButton Appearance="Appearance.Neutral">🧹 @L.T("set.sys.clearCache")</FluentButton>
+            </div>
+        </FluentTab>
+
+    </FluentTabs>
+</div>
+
+@code {
+    private string _activeTab = "profile";
+
+    private string _fullName = "System Admin";
+    private string _email = "admin@fluentdemo.local";
+    private string _phone = "+90 555 000 00 00";
+    private string _dept = "IT";
+
+    private string _theme = "light";
+    private string _density = "normal";
+    private int _fontSize = 14;
+    private string _accent = "#4f46e5";
+
+    private bool _notifEmail = true;
+    private bool _notifPush = false;
+    private bool _notifWeekly = true;
+    private bool _notifApproved = true;
+    private bool _notifPending = false;
+
+    private bool _twoFa = false;
+    private int _sessionTimeout = 30;
+
+    protected override void OnInitialized() => L.Changed += StateHasChanged;
+    public void Dispose() => L.Changed -= StateHasChanged;
+
+    private void Save() => ToastService.ShowSuccess(L.T("set.saved"));
+}

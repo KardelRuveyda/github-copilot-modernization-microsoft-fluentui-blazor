@@ -1,0 +1,118 @@
+@inject ChatBotService Bot
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="chatbot-fab">
+    <FluentButton Id="chatbotFab"
+                  Appearance="Appearance.Accent"
+                  IconStart="@(_open ? (Icon)new Icons.Regular.Size24.Dismiss() : new Icons.Filled.Size24.ChatSparkle())"
+                  OnClick="@Toggle"
+                  Title="Demo Assistant"
+                  Class="chatbot-fab-btn" />
+</div>
+
+@if (_open)
+{
+    <div class="chatbot-window">
+        <div class="chatbot-header">
+            <div class="chatbot-avatar-lg">IA</div>
+            <div class="chatbot-header-text">
+                <strong>Demo Assistant</strong>
+                <small>Button-driven helper</small>
+            </div>
+            <FluentSpacer />
+            <FluentButton Appearance="Appearance.Stealth"
+                          IconStart="@(new Icons.Regular.Size20.ArrowReset())"
+                          OnClick="@(() => Bot.Reset())"
+                          Title="Reset"
+                          Class="chatbot-header-btn" />
+            <FluentButton Appearance="Appearance.Stealth"
+                          IconStart="@(new Icons.Regular.Size20.Dismiss())"
+                          OnClick="@Toggle"
+                          Title="Close"
+                          Class="chatbot-header-btn" />
+        </div>
+
+        <div class="chatbot-body">
+            @foreach (var msg in Bot.Messages)
+            {
+                <div class="chatbot-msg @(msg.FromBot ? "from-bot" : "from-user")">
+                    @if (msg.FromBot)
+                    {
+                        <div class="chatbot-avatar">
+                            <FluentIcon Value="@(new Icons.Filled.Size16.Bot())" Color="Color.Fill" />
+                        </div>
+                    }
+                    <div class="chatbot-bubble">
+                        <div>@msg.Text</div>
+                        <div class="chatbot-time">@msg.At.ToString("HH:mm")</div>
+                        @if (msg.Suggestions is { Length: > 0 })
+                        {
+                            <FluentStack Orientation="Orientation.Horizontal"
+                                         HorizontalGap="6"
+                                         Wrap="true"
+                                         Style="margin-top:8px;">
+                                @foreach (var s in msg.Suggestions)
+                                {
+                                    var suggestion = s;
+                                    <FluentButton Appearance="Appearance.Outline"
+                                                  OnClick="@(() => Send(suggestion))">
+                                        @suggestion
+                                    </FluentButton>
+                                }
+                            </FluentStack>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="chatbot-actions">
+            <div class="chatbot-actions-grid">
+                <FluentButton Appearance="Appearance.Lightweight"
+                              IconStart="@(new Icons.Regular.Size16.Money())"
+                              OnClick='@(() => Send("Show incentives"))'>
+                    Incentives
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Lightweight"
+                              IconStart="@(new Icons.Regular.Size16.Add())"
+                              OnClick='@(() => Send("Create incentive"))'>
+                    Create
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Lightweight"
+                              IconStart="@(new Icons.Regular.Size16.DataBarVertical())"
+                              OnClick='@(() => Send("View reports"))'>
+                    Reports
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Lightweight"
+                              IconStart="@(new Icons.Regular.Size16.People())"
+                              OnClick='@(() => Send("Manage users"))'>
+                    Users
+                </FluentButton>
+                <FluentButton Appearance="Appearance.Lightweight"
+                              IconStart="@(new Icons.Regular.Size16.QuestionCircle())"
+                              OnClick='@(() => Send("Help"))'>
+                    Help
+                </FluentButton>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _open;
+
+    private void Toggle() => _open = !_open;
+
+    private void Send(string text)
+    {
+        var reply = Bot.Handle(text);
+        if (!string.IsNullOrEmpty(reply.NavigateTo))
+        {
+            Nav.NavigateTo(reply.NavigateTo);
+        }
+    }
+
+    protected override void OnInitialized() => Bot.Changed += StateHasChanged;
+    public void Dispose() => Bot.Changed -= StateHasChanged;
+}

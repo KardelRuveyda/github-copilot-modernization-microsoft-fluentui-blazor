@@ -1,0 +1,205 @@
+@page "/"
+@page "/dashboard"
+@inject AuthState Auth
+@inject LocalizationService L
+@inject NavigationManager Nav
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>@L.T("menu.dashboard") - FluentUI Demo</PageTitle>
+
+<AuthGuard />
+
+<div class="az-page-header">
+    <h1 class="az-page-title">
+        <span class="az-page-title-icon"><FluentIcon Value="@(new Icons.Filled.Size20.Board())" Color="Color.Fill" /></span>
+        @L.T("home.welcome", Auth.Username ?? "")
+    </h1>
+    <p class="az-page-subtitle">@L.T("home.subtitle")</p>
+
+    <div class="az-cmd-bar">
+        <button class="az-cmd-btn primary" @onclick="@(() => Nav.NavigateTo("/create-incentive"))">+ @L.T("shell.create")</button>
+        <span class="az-cmd-sep"></span>
+        <button class="az-cmd-btn" @onclick="@(() => Nav.NavigateTo("/incentives"))">?? @L.T("menu.incentives")</button>
+        <button class="az-cmd-btn" @onclick="@(() => Nav.NavigateTo("/reports"))">?? @L.T("menu.reports")</button>
+        <button class="az-cmd-btn" @onclick="@(() => Nav.NavigateTo("/activity"))">?? @L.T("menu.activity")</button>
+        <span class="az-cmd-sep"></span>
+        <button class="az-cmd-btn">?? @L.T("common.refresh")</button>
+    </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="az-grid-4" style="margin-bottom:16px;">
+    <div class="az-kpi">
+        <div class="az-kpi-icon" style="background:#0078d4;">??</div>
+        <div>
+            <div class="az-kpi-value">8</div>
+            <div class="az-kpi-label">@L.T("home.totalIncentives")</div>
+            <div class="az-kpi-delta up">@L.T("home.trendUp")</div>
+        </div>
+    </div>
+    <div class="az-kpi">
+        <div class="az-kpi-icon" style="background:#107c10;">?</div>
+        <div>
+            <div class="az-kpi-value">5</div>
+            <div class="az-kpi-label">@L.T("home.approved")</div>
+            <div class="az-kpi-delta up">@L.T("home.trendApproved")</div>
+        </div>
+    </div>
+    <div class="az-kpi">
+        <div class="az-kpi-icon" style="background:#f7630c;">?</div>
+        <div>
+            <div class="az-kpi-value">2</div>
+            <div class="az-kpi-label">@L.T("home.pending")</div>
+            <div class="az-kpi-delta down">@L.T("home.trendPending")</div>
+        </div>
+    </div>
+    <div class="az-kpi">
+        <div class="az-kpi-icon" style="background:#a4262c;">?</div>
+        <div>
+            <div class="az-kpi-value">1</div>
+            <div class="az-kpi-label">@L.T("home.rejected")</div>
+            <div class="az-kpi-delta">@L.T("home.trendFlat")</div>
+        </div>
+    </div>
+</div>
+
+<!-- TWO COLUMN -->
+<div class="az-grid-2">
+    <!-- Favorites tiles -->
+    <div class="az-tile">
+        <div class="az-tile-header">
+            <h3 class="az-tile-title">? @L.T("shell.favorites")</h3>
+            <a class="az-tile-link" href="/resources">@L.T("shell.viewAll")</a>
+        </div>
+        <div class="az-services">
+            <a class="az-service-tile" href="/incentives">
+                <div class="az-service-icon" style="background:#0078d4;">??</div>
+                @L.T("menu.incentives")
+            </a>
+            <a class="az-service-tile" href="/users">
+                <div class="az-service-icon" style="background:#5c2d91;">??</div>
+                @L.T("menu.users")
+            </a>
+            <a class="az-service-tile" href="/reports">
+                <div class="az-service-icon" style="background:#107c10;">??</div>
+                @L.T("menu.reports")
+            </a>
+            <a class="az-service-tile" href="/resources">
+                <div class="az-service-icon" style="background:#f7630c;">??</div>
+                @L.T("menu.resources")
+            </a>
+            <a class="az-service-tile" href="/activity">
+                <div class="az-service-icon" style="background:#038387;">??</div>
+                @L.T("menu.activity")
+            </a>
+            <a class="az-service-tile" href="/settings">
+                <div class="az-service-icon" style="background:#605e5c;">?</div>
+                @L.T("menu.settings")
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="az-tile">
+        <div class="az-tile-header">
+            <h3 class="az-tile-title">?? @L.T("shell.recent")</h3>
+            <a class="az-tile-link" href="/activity">@L.T("shell.viewAll")</a>
+        </div>
+        <div class="az-timeline">
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#107c10;">?</div>
+                <div>
+                    <div class="az-timeline-title">Incentive #1042 approved</div>
+                    <div class="az-timeline-desc">Engineering · Performance bonus · ?12.500</div>
+                </div>
+                <div class="az-timeline-time">2 min</div>
+            </div>
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#0078d4;">+</div>
+                <div>
+                    <div class="az-timeline-title">New incentive created</div>
+                    <div class="az-timeline-desc">Sales · Q4 target · ?8.000</div>
+                </div>
+                <div class="az-timeline-time">1 h</div>
+            </div>
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#f7630c;">?</div>
+                <div>
+                    <div class="az-timeline-title">Pending approvals</div>
+                    <div class="az-timeline-desc">3 incentives awaiting your review</div>
+                </div>
+                <div class="az-timeline-time">3 h</div>
+            </div>
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#5c2d91;">??</div>
+                <div>
+                    <div class="az-timeline-title">New user registered</div>
+                    <div class="az-timeline-desc">jane.doe @@ HR</div>
+                </div>
+                <div class="az-timeline-time">yesterday</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="az-grid-2" style="margin-top:16px;">
+    <div class="az-tile">
+        <div class="az-tile-header">
+            <h3 class="az-tile-title">?? @L.T("home.cardTitle")</h3>
+        </div>
+        <p style="color:#605e5c; line-height:1.6; font-size:13px;">
+            @((MarkupString)L.T("home.cardText"))
+        </p>
+        <FluentButton Appearance="Appearance.Accent" OnClick="@(() => Nav.NavigateTo("/incentives"))">
+            @L.T("home.goToList")
+        </FluentButton>
+    </div>
+
+    <div class="az-tile">
+        <div class="az-tile-header">
+            <h3 class="az-tile-title">?? Service health</h3>
+            <a class="az-tile-link" href="#">@L.T("shell.viewAll")</a>
+        </div>
+        <div class="az-timeline">
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#107c10;">?</div>
+                <div>
+                    <div class="az-timeline-title">API · operational</div>
+                    <div class="az-timeline-desc">All services running normally</div>
+                </div>
+                <div class="az-timeline-time">live</div>
+            </div>
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#107c10;">?</div>
+                <div>
+                    <div class="az-timeline-title">Web · operational</div>
+                    <div class="az-timeline-desc">SignalR circuit healthy</div>
+                </div>
+                <div class="az-timeline-time">live</div>
+            </div>
+            <div class="az-timeline-item">
+                <div class="az-timeline-dot" style="background:#f7630c;">!</div>
+                <div>
+                    <div class="az-timeline-title">In-memory store</div>
+                    <div class="az-timeline-desc">Demo mode: data resets on restart</div>
+                </div>
+                <div class="az-timeline-time">info</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Auth.Changed += StateHasChanged;
+        L.Changed += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Auth.Changed -= StateHasChanged;
+        L.Changed -= StateHasChanged;
+    }
+}

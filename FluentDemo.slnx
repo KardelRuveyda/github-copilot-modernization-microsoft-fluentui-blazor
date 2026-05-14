@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FluentDemo.Api/FluentDemo.Api.csproj" />
+    <Project Path="src/FluentDemo.Shared/FluentDemo.Shared.csproj" />
+    <Project Path="src/FluentDemo.Web/FluentDemo.Web.csproj" />
+  </Folder>
+</Solution>

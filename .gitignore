@@ -1,0 +1,37 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## Misc
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!packages/build/
+
+## ASP.NET / Publish
+publish/
+PublishProfiles/
+*.pubxml.user
+
+## Local secrets
+appsettings.*.local.json
+secrets.json
