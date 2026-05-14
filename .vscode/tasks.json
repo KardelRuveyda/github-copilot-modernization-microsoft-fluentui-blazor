@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run API",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["run", "--project", "src/FluentDemo.Api", "--urls", "http://0.0.0.0:5062"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Web",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["run", "--project", "src/FluentDemo.Web", "--urls", "http://0.0.0.0:5159"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Run All (API + Web)",
+      "dependsOn": ["Run API", "Run Web"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}
